@@ -14,7 +14,7 @@ die()  { log "[ERRO] $*" >&2; exit 1; }
 
 usage() {
     cat <<EOF_USAGE
-firewall_unidades_v2.sh v${VERSION}
+firewall_unidades.sh v${VERSION}
 
 Uso:
   $0 check [--resolve]
@@ -28,25 +28,30 @@ Uso:
   $0 backups
 
 Comandos:
-  check         Valida sintaxe do regras_firewall.conf. Com --resolve, testa DNS.
+  check         Valida regras, política de interfaces e serviços locais.
+                Com --resolve, testa também DNS e monta os conjuntos finais.
   stats         Mostra quantidade de regras e duplicatas, sem alterar o firewall.
   generate      Gera os arquivos runtime, mas não altera o firewall.
   apply         Faz backup, monta ipsets e aplica filter/nat em lote.
   refresh-sets  Reprocessa d:/s: e troca os ipsets atomicamente, sem recriar iptables.
-  status        Mostra resumo do backend, ipsets e regras gerenciadas.
-  diagnose      Diagnóstico somente leitura para implantação e troubleshooting.
+  status        Mostra resumo do backend, política, ipsets e regras gerenciadas.
+  diagnose      Diagnóstico somente leitura, incluindo WAN/LAN/VPN, ip_forward e rp_filter.
   rollback      Restaura um backup; sem argumento usa o mais recente.
   backups       Lista backups disponíveis.
 
 IP_DO_SERVIDOR pode também ser definido como SERVER_IP no arquivo:
   ${SETTINGS_FILE}
 
-Exemplos:
-  $0 stats
+v2.2:
+  INTERFACE_POLICY_MODE=compat preserva a confiança do legado.
+  INTERFACE_POLICY_MODE=roles usa LAN/VPN como confiáveis e nunca confia WAN genericamente.
+
+Fluxo recomendado:
+  $0 diagnose
   $0 check --resolve
   $0 generate 192.168.11.1
+  # revise o ruleset
   $0 apply 192.168.11.1
-  $0 refresh-sets
 EOF_USAGE
 }
 
