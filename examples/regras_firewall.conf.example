@@ -1,0 +1,22 @@
+# Exemplo mínimo e saneado.
+# O arquivo real de produção NÃO deve ser versionado.
+
+# Destinos liberados
+d: 10.80.0.0/16
+d: 172.16.0.0/16
+d: 192.168.0.0/16
+d: repo.example.com
+d: 203.0.113.10/32
+
+# Origem com FORWARD liberado
+s: 10.40.0.0/16
+
+# Portas TCP globais
+p: 443
+p: 5222
+
+# MAC liberado apenas para HTTPS
+m: 02:00:00:00:00:10 equipamento_https
+
+# MAC com FORWARD total
+c: 02:00:00:00:00:20 equipamento_total
