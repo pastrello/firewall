@@ -1,0 +1,40 @@
+# /operacao/firewall.unidades/firewall_unidades_v2.conf
+# Parâmetros locais do firewall_unidades.sh
+
+SERVER_IP="192.168.11.1"
+
+# DNS
+DNS_TIMEOUT=4
+DNS_JOBS=8
+DNS_CACHE_MAX_AGE=604800
+DNS_STRICT=0
+
+# Consolidação CIDR
+OPTIMIZE_NETWORKS=1
+
+# Segurança operacional
+ALLOW_FIREWALLD=0
+BACKUP_KEEP=10
+
+# Interfaces que o legado trata como totalmente confiáveis para INPUT.
+# IMPORTANTE: no futuro módulo inbound, a WAN não deve constar aqui.
+INPUT_TRUSTED_INTERFACES="eth0 em1 enX0 eno1 tap0 tap1 wg0"
+
+# Compatibilidade explícita com o comportamento legado:
+# destinos 192.168.0.0/16 eram implicitamente aceitos pela regra final.
+ALLOW_RFC1918_192_DST=1
+
+# Logging: por padrão apenas novas conexões, com rate limit.
+LOG_TRAFFIC=1
+LOG_NEW_ONLY=1
+LOG_RATE="50/second"
+LOG_BURST=200
+
+EXCLUDE_LOG_NET_1="192.168.0.0/16"
+EXCLUDE_LOG_NET_2="10.80.0.0/16"
+EXCLUDE_LOG_NET_3="172.16.0.0/12"
+
+# WireGuard legado - agora usando porta de DESTINO.
+WG_FORWARD_ENABLE=1
+WG_FORWARD_DST="172.20.0.200/32"
+WG_FORWARD_TCP_PORTS="1:1024 3389"
