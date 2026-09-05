@@ -1,5 +1,7 @@
 # Projeto inbound — "fora para dentro"
 
+> Status: o pré-requisito de classificação WAN/LAN/VPN foi implementado na v2.2. O inbound deverá operar com `INTERFACE_POLICY_MODE=roles`; `compat` existe apenas para migração do outbound legado.
+
 ## Princípio
 
 O modelo inbound deve partir de **negação por padrão**. Uma publicação só existe quando uma regra declara explicitamente:
@@ -39,6 +41,8 @@ input: name=ssh-firewall proto=tcp wan=eth1 port=22 src=@admins
 
 Esse tipo altera apenas a chain `INPUT`.
 
+A infraestrutura v2.2 de `LOCAL_INPUT_RULES` será reaproveitada como base de geração/validação, mas a sintaxe `input:` terá grupos de origem e semântica inbound própria.
+
 ## Grupos de origem
 
 Para não repetir centenas de redes em várias publicações:
@@ -71,7 +75,8 @@ Na primeira implementação IPv4, os grupos podem usar `ipset hash:net`; FQDNs s
 - contador por regra;
 - `generate` sem aplicar;
 - validação de conflito de porta pública;
-- backup/rollback usando a infraestrutura existente.
+- backup/rollback usando a infraestrutura existente;
+- exigir interface declarada em `WAN_INTERFACES` para `publish:` e `input:` externos.
 
 ## Recursos seguintes
 
@@ -109,14 +114,17 @@ Na primeira implementação IPv4, os grupos podem usar `ipset hash:net`; FQDNs s
 - testes automatizados em network namespaces;
 - GitHub Actions para parser/lint/testes sem tocar em firewall real.
 
-## Ponto crítico: interfaces
+## Interfaces — pré-requisito concluído na v2.2
 
-O script legado aceita integralmente INPUT de várias interfaces. Para um modelo inbound seguro será obrigatório classificar interfaces em:
+A v2.2 introduziu:
 
 ```text
+INTERFACE_POLICY_MODE="roles"
 WAN_INTERFACES="eth1"
 LAN_INTERFACES="eth0 eno1"
 VPN_INTERFACES="wg0"
 ```
 
-Uma WAN nunca deve fazer parte de `INPUT_TRUSTED_INTERFACES`. Essa refatoração deve ocorrer antes de habilitar publicações inbound em produção.
+No modo `roles`, uma WAN nunca faz parte do conjunto de interfaces com ACCEPT genérico em INPUT. Sobreposições de papéis são rejeitadas e uma WAN ainda presente em `INPUT_TRUSTED_INTERFACES` também impede a validação.
+
+O módulo inbound deverá recusar aplicação se `INTERFACE_POLICY_MODE` não estiver em `roles`.
