@@ -29,6 +29,7 @@ p: portas únicas               : $(wc -l < "$tmp/ports.txt")
 m: MAC HTTPS únicos            : $(wc -l < "$tmp/mac_https.txt")
 c: MAC total únicos            : $(wc -l < "$tmp/mac_full.txt")
 Duplicatas removíveis em d:    : $((raw_d - uniq_d))
+Política interfaces            : $INTERFACE_POLICY_MODE
 EOF_STATS
 
     if [[ "$OPTIMIZE_NETWORKS" == "1" ]] && command -v python3 >/dev/null 2>&1; then
@@ -45,8 +46,9 @@ cmd_check() {
     local tmp="$RUNTIME_DIR/check.$$"
     ensure_dirs
     mkdir -p "$tmp"
+    validate_interface_policy || { rm -rf "$tmp"; die "Validação da política de interfaces falhou."; }
     parse_config "$tmp" || { rm -rf "$tmp"; die "Validação falhou."; }
-    log "Sintaxe do arquivo de regras: OK."
+    log "Sintaxe do arquivo de regras e política de interfaces: OK."
 
     if [[ "$resolve" == "--resolve" ]]; then
         build_sets_files "$tmp" || { rm -rf "$tmp"; die "Validação DNS falhou."; }
@@ -100,6 +102,8 @@ cmd_apply() {
     ROLLBACK_ARMED=0
     log "Firewall aplicado com sucesso."
     printf '\nResumo pós-aplicação:\n'
+    printf '  Política      : %s\n' "$INTERFACE_POLICY_MODE"
+    printf '  INPUT trusted : %s\n' "$(effective_trusted_interfaces)"
     printf '  %s: %s elementos\n' "$SET_DST" "$($IPSET list "$SET_DST" | awk '/Number of entries:/ {print $4}')"
     printf '  %s: %s elementos\n' "$SET_SRC" "$($IPSET list "$SET_SRC" | awk '/Number of entries:/ {print $4}')"
     printf '  Regras FORWARD: %s\n' "$($IPTABLES -S FORWARD | wc -l)"
@@ -132,10 +136,12 @@ cmd_status() {
     require_root
     ensure_dirs
     require_firewall_tools
-    printf 'firewall_unidades_v2 %s\n' "$VERSION"
+    printf 'firewall_unidades v%s\n' "$VERSION"
     printf 'iptables: %s\n' "$($IPTABLES --version 2>&1 | head -1)"
     printf 'config  : %s\n' "$RULES_FILE"
-    printf 'state   : %s\n\n' "$STATE_DIR"
+    printf 'state   : %s\n' "$STATE_DIR"
+    printf 'policy  : %s\n' "$INTERFACE_POLICY_MODE"
+    printf 'trusted : %s\n\n' "$(effective_trusted_interfaces)"
 
     local s
     for s in "$SET_DST" "$SET_SRC"; do
@@ -182,11 +188,20 @@ cmd_diagnose() {
         fi
     fi
 
-    printf '\nInterfaces IPv4:\n'
+    printf '\nInterfaces IPv4 detectadas:\n'
     if command -v ip >/dev/null 2>&1; then
         ip -o -4 addr show 2>/dev/null | awk '{printf "  %-12s %s\n", $2, $4}' || true
     else
         printf '  comando ip não encontrado\n'
+    fi
+
+    print_interface_diagnostics
+
+    printf '\nValidação da política:\n'
+    if validate_interface_policy; then
+        printf '  resultado: OK\n'
+    else
+        printf '  resultado: ERRO\n'
     fi
 
     if [[ -n "$IPTABLES" && -x "$IPTABLES" && ${EUID:-$(id -u)} -eq 0 ]]; then
@@ -196,10 +211,10 @@ cmd_diagnose() {
         printf '\nPolicies atuais: execute como root para consultar.\n'
     fi
 
-    printf '\nParâmetros relevantes para futuro inbound:\n'
-    printf '  INPUT_TRUSTED_INTERFACES=%s\n' "$INPUT_TRUSTED_INTERFACES"
+    printf '\nParâmetros adicionais:\n'
     printf '  ALLOW_RFC1918_192_DST=%s\n' "$ALLOW_RFC1918_192_DST"
     printf '  WG_FORWARD_ENABLE=%s\n' "$WG_FORWARD_ENABLE"
+    printf '  LOCAL_INPUT_RULES=%s regra(s) declarada(s)\n' "${#LOCAL_INPUT_RULES[@]}"
 }
 
 cmd_backups() {
