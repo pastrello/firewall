@@ -16,9 +16,58 @@ OPTIMIZE_NETWORKS=1
 ALLOW_FIREWALLD=0
 BACKUP_KEEP=10
 
-# Interfaces que o legado trata como totalmente confiáveis para INPUT.
-# IMPORTANTE: no futuro módulo inbound, a WAN não deve constar aqui.
+# ---------------------------------------------------------------------------
+# v2.2 - papéis de interfaces
+# ---------------------------------------------------------------------------
+# compat = preserva INPUT_TRUSTED_INTERFACES exatamente como no legado.
+# roles  = apenas LAN_INTERFACES e VPN_INTERFACES recebem ACCEPT genérico;
+#          WAN_INTERFACES nunca recebe ACCEPT genérico.
+#
+# Recomendação de migração:
+# 1) mantenha compat;
+# 2) ajuste WAN/LAN/VPN conforme o servidor;
+# 3) rode: ./firewall_unidades.sh diagnose
+# 4) rode: ./firewall_unidades.sh check --resolve
+# 5) altere para roles e gere/revise antes de apply.
+INTERFACE_POLICY_MODE="compat"
+
+# O que fazer quando uma interface declarada não existe no momento:
+# ignore | warn | error
+INTERFACE_MISSING_POLICY="warn"
+
+# EXEMPLOS - ajuste para cada servidor antes de ativar mode=roles.
+WAN_INTERFACES="eth1 enX1"
+LAN_INTERFACES="eth0 em1 enX0 eno1"
+VPN_INTERFACES="tap0 tap1 wg0"
+
+# Compatibilidade v2.1/legado. Usada para ACCEPT genérico somente em mode=compat.
+# Em mode=roles, uma interface WAN presente aqui causa erro de validação.
 INPUT_TRUSTED_INTERFACES="eth0 em1 enX0 eno1 tap0 tap1 wg0"
+
+# Redes historicamente confiáveis no INPUT. Em compat, mantêm o ACCEPT por
+# origem do legado. Em roles, são restritas às interfaces LAN/VPN.
+INPUT_TRUSTED_SOURCES="10.80.0.0/16 172.20.0.0/24"
+
+# ---------------------------------------------------------------------------
+# Serviços locais declarativos
+# ---------------------------------------------------------------------------
+# Formato por item:
+# name=NOME iface=IFACE|@wan|@lan|@vpn proto=tcp|udp port=N|N:N \
+# src=any|IPv4/CIDR enabled=0|1
+#
+# Estas oito regras reproduzem a porta 300 do script legado. Remova/desative
+# as que não existem no servidor. Em v2.2, FQDN como origem ainda não é aceito
+# aqui; grupos/FQDN de origem entram no módulo inbound da próxima etapa.
+LOCAL_INPUT_RULES=(
+    "name=legacy-port300-eth0 iface=eth0 proto=tcp port=300 src=any"
+    "name=legacy-port300-eth1-lan iface=eth1 proto=tcp port=300 src=192.168.1.0/24"
+    "name=legacy-port300-eth1-public iface=eth1 proto=tcp port=300 src=200.195.133.27/32"
+    "name=legacy-port300-eth1-vpn iface=eth1 proto=tcp port=300 src=10.100.1.0/24"
+    "name=legacy-port300-enX0 iface=enX0 proto=tcp port=300 src=any"
+    "name=legacy-port300-enX1-lan iface=enX1 proto=tcp port=300 src=192.168.1.0/24"
+    "name=legacy-port300-enX1-public iface=enX1 proto=tcp port=300 src=200.195.133.27/32"
+    "name=legacy-port300-enX1-vpn iface=enX1 proto=tcp port=300 src=10.100.1.0/24"
+)
 
 # Compatibilidade explícita com o comportamento legado:
 # destinos 192.168.0.0/16 eram implicitamente aceitos pela regra final.
@@ -34,7 +83,7 @@ EXCLUDE_LOG_NET_1="192.168.0.0/16"
 EXCLUDE_LOG_NET_2="10.80.0.0/16"
 EXCLUDE_LOG_NET_3="172.16.0.0/12"
 
-# WireGuard legado - agora usando porta de DESTINO.
+# WireGuard legado - usando porta de DESTINO.
 WG_FORWARD_ENABLE=1
 WG_FORWARD_DST="172.20.0.200/32"
 WG_FORWARD_TCP_PORTS="1:1024 3389"
