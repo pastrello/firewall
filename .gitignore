@@ -1,0 +1,25 @@
+# Configuração operacional / dados de clientes
+regras_firewall.conf
+firewall_unidades_v2.conf
+firewall_unidades.conf
+regras_inbound.conf
+
+# Estado gerado
+.firewall-v2/
+*.log
+*.save
+*.bak
+*.backup
+
+# Temporários
+_d.txt
+__d*.txt
+*.tmp
+*.swp
+*~
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
