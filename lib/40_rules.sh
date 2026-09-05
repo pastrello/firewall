@@ -5,7 +5,7 @@ emit_filter_rules() {
     local parsedir="$1" outfile="$2"
     local mac port
 
-    cat > "$outfile" <<EOF_FILTER
+    cat > "$outfile" <<'EOF_FILTER'
 *filter
 :INPUT ACCEPT [0:0]
 :FORWARD ACCEPT [0:0]
@@ -14,19 +14,18 @@ emit_filter_rules() {
 
 # INPUT base
 -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -m conntrack --ctstate INVALID -j DROP
 -A INPUT -p icmp -j ACCEPT
 -A INPUT -i lo -j ACCEPT
-# __INPUT_TRUSTED_INTERFACES__
--A INPUT -m conntrack --ctstate NEW -p tcp -i eth0 --dport 300 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i eth1 --dport 300 -s 192.168.1.0/24 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i eth1 --dport 300 -s 200.195.133.27 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i eth1 --dport 300 -s 10.100.1.0/24 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i enX0 --dport 300 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i enX1 --dport 300 -s 192.168.1.0/24 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i enX1 --dport 300 -s 200.195.133.27 -j ACCEPT
--A INPUT -m conntrack --ctstate NEW -p tcp -i enX1 --dport 300 -s 10.100.1.0/24 -j ACCEPT
--A INPUT -s 10.80.0.0/16 -j ACCEPT
--A INPUT -s 172.20.0.0/24 -j ACCEPT
+EOF_FILTER
+
+    emit_trusted_input_rules "$outfile"
+    emit_local_input_rules "$outfile"
+    emit_trusted_source_rules "$outfile"
+
+    cat >> "$outfile" <<'EOF_FILTER'
+
+# Tudo que chega ao próprio firewall e não foi autorizado acima é rejeitado.
 -A INPUT -j REJECT --reject-with icmp-host-prohibited
 
 # FORWARD stateful: respostas de conexões já autorizadas não precisam repetir
@@ -37,53 +36,27 @@ emit_filter_rules() {
 # MACs com acesso total (c:) - equivalentes ao antigo -I FORWARD
 EOF_FILTER
 
-    local tmp_rules="${outfile}.tmp" iface
-    : > "$tmp_rules"
-    while IFS= read -r line; do
-        if [[ "$line" == "# __INPUT_TRUSTED_INTERFACES__" ]]; then
-            for iface in $INPUT_TRUSTED_INTERFACES; do
-                [[ -n "$iface" ]] || continue
-                printf -- '-A INPUT -i %s -j ACCEPT\n' "$iface" >> "$tmp_rules"
-            done
-        else
-            printf '%s\n' "$line" >> "$tmp_rules"
-        fi
-    done < "$outfile"
-    mv -f "$tmp_rules" "$outfile"
-
     while IFS= read -r mac; do
         [[ -n "$mac" ]] || continue
         printf -- '-A FORWARD -m mac --mac-source %s -j ACCEPT\n' "$mac" >> "$outfile"
     done < "$parsedir/mac_full.txt"
 
-    cat >> "$outfile" <<EOF_FILTER
+    if [[ "$WG_FORWARD_ENABLE" == "1" ]]; then
+        local wg_port
+        printf '\n# VPN WireGuard - portas de destino\n' >> "$outfile"
+        for wg_port in $WG_FORWARD_TCP_PORTS; do
+            [[ -n "$wg_port" ]] || continue
+            printf -- '-A FORWARD -d %s -p tcp --dport %s -j ACCEPT\n' "$WG_FORWARD_DST" "$wg_port" >> "$outfile"
+        done
+    fi
 
-# __WIREGUARD_FORWARD_RULES__
+    cat >> "$outfile" <<EOF_FILTER
 
 # Logging de tráfego externo
 -A LOG_INTERNET -d ${EXCLUDE_LOG_NET_1} -j RETURN
 -A LOG_INTERNET -d ${EXCLUDE_LOG_NET_2} -j RETURN
 -A LOG_INTERNET -d ${EXCLUDE_LOG_NET_3} -j RETURN
 EOF_FILTER
-
-    if [[ "$WG_FORWARD_ENABLE" == "1" ]]; then
-        local wg_port tmp_wg="${outfile}.wg"
-        : > "$tmp_wg"
-        while IFS= read -r line; do
-            if [[ "$line" == "# __WIREGUARD_FORWARD_RULES__" ]]; then
-                printf '# VPN WireGuard - portas de destino\n' >> "$tmp_wg"
-                for wg_port in $WG_FORWARD_TCP_PORTS; do
-                    [[ -n "$wg_port" ]] || continue
-                    printf -- '-A FORWARD -d %s -p tcp --dport %s -j ACCEPT\n' "$WG_FORWARD_DST" "$wg_port" >> "$tmp_wg"
-                done
-            else
-                printf '%s\n' "$line" >> "$tmp_wg"
-            fi
-        done < "$outfile"
-        mv -f "$tmp_wg" "$outfile"
-    else
-        sed -i '/^# __WIREGUARD_FORWARD_RULES__$/d' "$outfile"
-    fi
 
     if [[ "$LOG_TRAFFIC" == "1" ]]; then
         local log_state=""
@@ -166,6 +139,7 @@ build_runtime() {
     local target="$RUNTIME_DIR/current"
     mkdir -p "$work"
 
+    validate_interface_policy || { rm -rf "$work"; die "Política de interfaces/serviços locais inválida; nada foi aplicado."; }
     parse_config "$work" || { rm -rf "$work"; die "Configuração inválida; nada foi aplicado."; }
     build_sets_files "$work" || { rm -rf "$work"; die "Falha ao preparar destinos/origens."; }
 
@@ -176,6 +150,8 @@ build_runtime() {
         emit_nat_rules "$server_ip" "$work/iptables.rules"
         printf '%s\n' "$server_ip" > "$work/server_ip.txt"
     fi
+    printf '%s\n' "$INTERFACE_POLICY_MODE" > "$work/interface_policy_mode.txt"
+    effective_trusted_interfaces > "$work/input_trusted_interfaces.txt"
 
     rm -rf "${target}.old"
     [[ -d "$target" ]] && mv "$target" "${target}.old"
@@ -189,6 +165,9 @@ build_runtime() {
 print_runtime_summary() {
     local dir="$1"
     printf '\n%-24s %s\n' "Arquivo de regras:" "$RULES_FILE"
+    printf '%-24s %s\n' "Política interfaces:" "$INTERFACE_POLICY_MODE"
+    printf '%-24s %s\n' "INPUT confiável:" "$(effective_trusted_interfaces)"
+    printf '%-24s %s\n' "Serviços locais:" "${#LOCAL_INPUT_RULES[@]}"
     printf '%-24s %s\n' "Destinos finais:" "$(wc -l < "$dir/destinos.final")"
     printf '%-24s %s\n' "Origens finais:" "$(wc -l < "$dir/origens.final")"
     printf '%-24s %s\n' "Portas TCP:" "$(wc -l < "$dir/ports.txt")"
