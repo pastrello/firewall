@@ -1,12 +1,16 @@
 # Exemplo mínimo e saneado.
 # O arquivo real de produção NÃO deve ser versionado.
 
-# Destinos liberados
+# Destinos liberados - snapshot em apply/refresh-sets
 d: 10.80.0.0/16
 d: 172.16.0.0/16
 d: 192.168.0.0/16
 d: repo.example.com
 d: 203.0.113.10/32
+
+# Destinos FQDN que podem mudar durante o dia - acompanhados pelo dnswatch
+u: filial01.ddns.example.net
+u: servico-dinamico.example.com
 
 # Origem com FORWARD liberado
 s: 10.40.0.0/16
