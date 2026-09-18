@@ -1,6 +1,6 @@
 # Firewall Unidades
 
-Firewall Linux otimizado para listas extensas de autorização, inicialmente **dentro → fora**, preparado para evoluir para **fora → dentro**. Compatibilidade alvo: CentOS/RHEL/Rocky Linux 7, 8 e 9 com `iptables` + `ipset`.
+Firewall Linux otimizado para listas extensas de autorização, inicialmente **dentro → fora**, preparado para evoluir para **fora → dentro** e múltiplos backends. Na v2.4 o backend operacional permanece `iptables` + `ipset`; a arquitetura já está desacoplada para receber `nftables`.
 
 ## Formato outbound
 
@@ -15,6 +15,24 @@ c: 02:00:00:00:00:20
 ```
 
 `d:` é destino estático/snapshot DNS; `u:` é FQDN de destino dinâmico; `s:` libera origem; `p:` porta TCP global; `m:` MAC para HTTPS; `c:` MAC com FORWARD total. `u:` aceita somente FQDN.
+
+## v2.4 — abstração de backend
+
+A v2.4 separa a política e a operação do mecanismo de firewall. A configuração passa a declarar explicitamente:
+
+~~~bash
+BACKEND="iptables"
+~~~
+
+Não há seleção automática. `nftables` está reservado para a v2.5 e não pode ser selecionado na v2.4.
+
+A API interna cobre geração, validação, aplicação, backup/restore e operações de conjuntos. Parser, DNS, watcher `u:`, interfaces e comandos deixam de depender diretamente de `iptables`/`ipset`.
+
+Diagnóstico:
+
+~~~bash
+./firewall_unidades.sh backend-info
+~~~
 
 ## v2.3 — Dynamic DNS outbound
 
@@ -33,7 +51,7 @@ dnf install bind-utils
 # EL7: yum install bind-utils
 ```
 
-Depois de aplicar o ruleset v2.3, instale o serviço diretamente pelo gerenciador:
+Depois de aplicar o ruleset, instale o serviço diretamente pelo gerenciador:
 
 ```bash
 ./firewall_unidades.sh installservice
@@ -84,7 +102,7 @@ chmod 700 /operacao/firewall.unidades/firewall_unidades.sh
 chmod 600 /operacao/firewall.unidades/firewall_unidades_v2.conf
 ```
 
-Dependências: `iptables`, `iptables-save`, `iptables-restore`, `ipset`, `getent`, `timeout`, `flock`, `awk`, `sort`, `cmp`. Para `u:` também é necessário `dig`. Python 3 é opcional para consolidação CIDR.
+Dependências do backend `iptables`: `iptables`, `iptables-save`, `iptables-restore`, `ipset`, `getent`, `timeout`, `flock`, `awk`, `sort`, `cmp`. Para `u:` também é necessário `dig`. Python 3 é opcional para consolidação CIDR.
 
 ## Fluxo seguro
 
@@ -98,11 +116,15 @@ Dependências: `iptables`, `iptables-save`, `iptables-restore`, `ipset`, `getent
 ./firewall_unidades.sh dynamic-status
 ```
 
-Teste do módulo dinâmico:
+Testes locais:
 
-```bash
+~~~bash
+bash tests/test_v22_policy.sh
 bash tests/test_v23_dynamic.sh
-```
+bash tests/test_v24_backend.sh
+~~~
+
+O repositório também executa esses testes e `bash -n` via GitHub Actions.
 
 Atualização manual/rollback:
 
@@ -128,4 +150,5 @@ O futuro modelo **fora → dentro** permanece em `docs/INBOUND.md`. A infraestru
 - `docs/V2.2-MIGRATION.md`
 - `docs/DYNAMIC-DNS.md`
 - `docs/INBOUND.md`
+- `docs/ROADMAP.md`
 - `CHANGELOG.md`
