@@ -23,7 +23,7 @@
 set -Eeuo pipefail
 umask 077
 
-VERSION="2.3.0"
+VERSION="2.3.1"
 
 BASE_DIR="${FW_BASE_DIR:-/operacao/firewall.unidades}"
 RULES_FILE="${FW_RULES_FILE:-${BASE_DIR}/regras_firewall.conf}"
