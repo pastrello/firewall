@@ -32,7 +32,10 @@ dynamic_compute_sleep() {
 }
 
 dynamic_query_host() {
-    local host="$1" outfile="$2" raw="${outfile}.raw"
+    local host outfile raw
+    host="${1:?host ausente}"
+    outfile="${2:?outfile ausente}"
+    raw="${outfile}.raw"
     : > "$outfile"; : > "$raw"
     if command -v dig >/dev/null 2>&1; then
         timeout "${DNS_TIMEOUT}s" dig +time="$DNS_TIMEOUT" +tries=1 +noall +answer A "$host" 2>/dev/null > "$raw" || true
@@ -172,7 +175,9 @@ EOF_META
 }
 
 prepare_dynamic_snapshot() {
-    local parsedir="$1" hosts="$1/u_dns.txt"
+    local parsedir hosts
+    parsedir="${1:?parsedir ausente}"
+    hosts="${parsedir}/u_dns.txt"
     [[ -f "$hosts" ]] || : > "$hosts"
     dynamic_build_candidate "$hosts" "$parsedir/dynamic-state.candidate" "$parsedir/dynamic-destinos.final" "$parsedir/dynamic-status.candidate" "$parsedir/dynamic-meta.candidate"
 }
