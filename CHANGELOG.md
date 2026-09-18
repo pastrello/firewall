@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.4.0 - 2026-09-18
+
+### Abstração de backend
+
+- adiciona `BACKEND="iptables"` explícito e sem seleção automática;
+- cria `lib/backend/00_backend.sh` como dispatcher;
+- move geração, validação, aplicação, backup/restore e operações de sets do iptables para `lib/backend/iptables.sh`;
+- parser, DNS dinâmico, runtime, backup e comandos passam a usar API de backend;
+- `BACKEND=nftables` é reservado e rejeitado até a v2.5.
+
+### Compatibilidade
+
+- backend iptables preserva a semântica da v2.3.1;
+- backups novos gravam metadata do backend;
+- backups antigos com `iptables.save` são reconhecidos automaticamente como iptables;
+- rollback entre backends diferentes é bloqueado.
+
+### Operação e testes
+
+- adiciona `backend-info`;
+- adiciona `tests/test_v24_backend.sh`;
+- adiciona GitHub Actions para `bash -n` e testes 2.2/2.3/2.4;
+- documenta roadmap e débitos técnicos preservados.
+
 ## 2.3.1 - 2026-09-18
 
 ### Correção
