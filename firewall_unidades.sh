@@ -23,7 +23,7 @@
 set -Eeuo pipefail
 umask 077
 
-VERSION="2.3.1"
+VERSION="2.4.0"
 
 BASE_DIR="${FW_BASE_DIR:-/operacao/firewall.unidades}"
 RULES_FILE="${FW_RULES_FILE:-${BASE_DIR}/regras_firewall.conf}"
@@ -52,6 +52,7 @@ DNS_STRICT="${DNS_STRICT:-0}"
 OPTIMIZE_NETWORKS="${OPTIMIZE_NETWORKS:-1}"
 ALLOW_FIREWALLD="${ALLOW_FIREWALLD:-0}"
 BACKUP_KEEP="${BACKUP_KEEP:-10}"
+BACKEND="${BACKEND:-iptables}"
 
 INTERFACE_POLICY_MODE="${INTERFACE_POLICY_MODE:-compat}"
 INTERFACE_MISSING_POLICY="${INTERFACE_MISSING_POLICY:-warn}"
@@ -101,10 +102,6 @@ if [[ -r "$SETTINGS_FILE" ]]; then
     source "$SETTINGS_FILE"
 fi
 
-IPTABLES="${IPTABLES:-$(command -v iptables 2>/dev/null || true)}"
-IPTABLES_SAVE="${IPTABLES_SAVE:-$(command -v iptables-save 2>/dev/null || true)}"
-IPTABLES_RESTORE="${IPTABLES_RESTORE:-$(command -v iptables-restore 2>/dev/null || true)}"
-IPSET="${IPSET:-$(command -v ipset 2>/dev/null || true)}"
 
 ACTIVE_BACKUP=""
 ROLLBACK_ARMED=0
@@ -116,9 +113,15 @@ for module in \
     "$SCRIPT_DIR/lib/00_common.sh" \
     "$SCRIPT_DIR/lib/10_parser.sh" \
     "$SCRIPT_DIR/lib/15_interfaces.sh" \
-    "$SCRIPT_DIR/lib/20_dns.sh" \
+    "$SCRIPT_DIR/lib/20_dns.sh"; do
+    source "$module"
+done
+
+source "$SCRIPT_DIR/lib/backend/00_backend.sh"
+backend_load "$SCRIPT_DIR" "$BACKEND"
+
+for module in \
     "$SCRIPT_DIR/lib/25_dynamic_dns.sh" \
-    "$SCRIPT_DIR/lib/30_ipset.sh" \
     "$SCRIPT_DIR/lib/40_rules.sh" \
     "$SCRIPT_DIR/lib/50_backup.sh" \
     "$SCRIPT_DIR/lib/60_commands.sh"; do
@@ -135,6 +138,7 @@ main() {
         refresh-sets) shift; cmd_refresh_sets "$@" ;;
         status) shift; cmd_status "$@" ;;
         diagnose) shift; cmd_diagnose "$@" ;;
+        backend-info) shift; cmd_backend_info "$@" ;;
         dynamic-refresh) shift; cmd_dynamic_refresh "$@" ;;
         dynamic-status) shift; cmd_dynamic_status "$@" ;;
         dnswatch-daemon) shift; cmd_dnswatch_daemon "$@" ;;
