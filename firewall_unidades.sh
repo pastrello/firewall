@@ -13,7 +13,8 @@
 #   c: MAC                    -> libera FORWARD total para o MAC
 #
 # v2.2: hardening de interfaces WAN/LAN/VPN e serviços INPUT declarativos.
-# v2.3: destinos DNS dinâmicos (u:) com ipset dedicado e daemon systemd.
+# v2.3: destinos DNS dinâmicos (u:) com atualização contínua.
+# v2.4: abstração de backend; iptables/ipset permanece como implementação padrão.
 #
 # IMPORTANTE:
 #   Este gerenciador assume controle exclusivo das tabelas IPv4 filter e nat,
