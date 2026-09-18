@@ -2,48 +2,93 @@
 
 ## Objetivo
 
-O projeto controla um firewall Linux que atua como roteador entre redes internas e externas. A geração atual é orientada principalmente a tráfego **de dentro para fora**.
+O projeto controla um firewall Linux que atua como roteador entre redes internas e externas. A política é independente do mecanismo de firewall; a v2.4 conclui a primeira separação entre lógica comum e backend.
 
-## Pipeline atual
+## Pipeline
 
 1. `regras_firewall.conf` é lido e validado;
 2. regras `d:`, `u:` e `s:` são deduplicadas;
-3. FQDNs `d:`/`s:` são resolvidos para IPv4 com cache de contingência;
-4. redes estáticas são consolidadas quando Python 3 está disponível;
-5. destinos/origens são carregados em `ipset`;
-6. `iptables-restore` aplica `filter` e `nat` em lote;
-7. alterações destrutivas são precedidas por backup/rollback;
-8. opcionalmente, o watcher v2.3 mantém `u:` sincronizado sem reconstruir o ruleset.
+3. FQDNs `d:`/`s:` são resolvidos com cache;
+4. redes são consolidadas quando Python 3 está disponível;
+5. o watcher mantém o estado de `u:`;
+6. a camada comum entrega a política ao backend selecionado;
+7. o backend gera, valida e aplica seu artefato;
+8. backup/rollback e conjuntos também passam pela API do backend.
 
-## Sets
+## Camadas
+
+~~~text
+regras_firewall.conf
+        |
+        v
+ parser / DNS / interfaces / dynamic DNS
+        |
+        v
+  API comum de backend
+        |
+        +--> iptables + ipset   [v2.4]
+        |
+        +--> nftables           [v2.5+]
+~~~
+
+## API de backend v2.4
+
+A implementação concreta deve fornecer, entre outras:
+
+- `backend_generate_rules`;
+- `backend_validate_rules`;
+- `backend_apply_rules`;
+- `backend_backup_rules` / `backend_restore_rules`;
+- `backend_set_ensure`;
+- `backend_set_load_atomic`;
+- `backend_set_export_entries`;
+- `backend_set_destroy`;
+- `backend_set_count`;
+- `backend_ruleset_uses_set`.
+
+O dispatcher está em `lib/backend/00_backend.sh`. O backend atual está em `lib/backend/iptables.sh`.
+
+## Seleção
+
+~~~bash
+BACKEND="iptables"
+~~~
+
+A v2.4 não possui modo `auto`. `BACKEND=nftables` é rejeitado deliberadamente até a implementação da v2.5.
+
+## Conjuntos lógicos
+
+Os nomes lógicos permanecem:
 
 - `FWU_DST_V4`: destinos `d:`;
-- `FWU_DYN_DST_V4`: destinos `u:` dinâmicos;
-- `FWU_SRC_V4`: origens permitidas.
+- `FWU_DYN_DST_V4`: destinos `u:`;
+- `FWU_SRC_V4`: origens.
 
-## DNS estático versus dinâmico
+No backend iptables eles são `ipset`. Um backend nftables poderá implementá-los como sets nativos sem alterar o parser ou o watcher.
 
-`d: hostname` é um snapshot atualizado por `apply`/`refresh-sets`.
+## Backup e rollback
 
-`u: hostname` é dependência DNS contínua. O daemon consulta TTL, mantém grace/stale state e troca somente `FWU_DYN_DST_V4` via `ipset swap`.
+Backups novos registram o backend em `backup/backend`. Backups 2.0–2.3 sem metadata, mas contendo `iptables.save`, são reconhecidos como `iptables`.
 
-O watcher compartilha o lock das operações principais e persiste estado em `.firewall-v2/dynamic/`.
+Um rollback só é permitido quando o backend do backup é compatível com o backend configurado.
 
-## Modelo stateful
+## DNS dinâmico
 
-`FORWARD` aceita `ESTABLISHED,RELATED` antes de novas conexões e descarta `INVALID`, permitindo política final explícita de DROP.
+`d: hostname` é snapshot atualizado por `apply`/`refresh-sets`.
+
+`u: hostname` é dependência contínua. O daemon usa a API de conjuntos do backend e não conhece mais `ipset` diretamente.
 
 ## Papéis de interface
 
-A v2.2 separa WAN/LAN/VPN e impede confiança genérica de WAN no modo `roles`, pré-requisito para inbound.
+A v2.2 separa WAN/LAN/VPN e impede confiança genérica de WAN no modo `roles`.
 
-## Separação de política
+## Política
 
 1. **outbound-static** — `d:` e regras tradicionais;
-2. **outbound-dynamic** — `u:` mantido pelo watcher;
-3. **inbound-forward** — publicação/DNAT de serviços internos;
-4. **inbound-local** — serviços no próprio firewall.
+2. **outbound-dynamic** — `u:`;
+3. **inbound-forward** — planejado;
+4. **inbound-local** — planejado.
 
-## Backend
+## Compatibilidade
 
-A v2.x permanece em `iptables` + `ipset` por compatibilidade com EL7/EL8/EL9. A arquitetura evita acoplamento desnecessário para permitir backend futuro em `nftables`.
+Na v2.4 o backend `iptables` preserva a semântica da v2.3.1. Nenhuma conversão automática para nftables é feita.
