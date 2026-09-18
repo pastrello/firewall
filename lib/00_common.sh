@@ -24,6 +24,7 @@ Uso:
   $0 refresh-sets
   $0 status
   $0 diagnose
+  $0 backend-info
   $0 dynamic-refresh
   $0 dynamic-status
   $0 installservice
@@ -39,6 +40,7 @@ Comandos:
   refresh-sets     Reprocessa d:/s:/u: e troca os ipsets atomicamente.
   status           Mostra backend, ipsets e regras gerenciadas.
   diagnose         Diagnóstico somente leitura para implantação/troubleshooting.
+  backend-info      Mostra backend selecionado e mecanismos disponíveis.
   dynamic-refresh  Força uma atualização imediata do ipset de destinos u:.
   dynamic-status   Mostra estado do DNS watcher e destinos dinâmicos.
   installservice   Instala/habilita/inicia firewall-dnswatch.service no systemd.
@@ -46,7 +48,10 @@ Comandos:
   rollback         Restaura um backup; sem argumento usa o mais recente.
   backups          Lista backups disponíveis.
 
-Formato dinâmico v2.3:
+Backend v2.4:
+  BACKEND="iptables"   # nftables entra na v2.5
+
+Formato dinâmico:
   u: pastrello.ddns.net
 
 IP_DO_SERVIDOR pode também ser definido como SERVER_IP no arquivo:
@@ -71,13 +76,15 @@ ensure_dirs() {
 require_root() { [[ ${EUID:-$(id -u)} -eq 0 ]] || die "Este comando precisa ser executado como root."; }
 need_cmd() { command -v "$1" >/dev/null 2>&1 || die "Comando obrigatório não encontrado: $1"; }
 
-require_firewall_tools() {
-    [[ -n "$IPTABLES" && -x "$IPTABLES" ]] || die "iptables não encontrado."
-    [[ -n "$IPTABLES_SAVE" && -x "$IPTABLES_SAVE" ]] || die "iptables-save não encontrado."
-    [[ -n "$IPTABLES_RESTORE" && -x "$IPTABLES_RESTORE" ]] || die "iptables-restore não encontrado."
-    [[ -n "$IPSET" && -x "$IPSET" ]] || die "ipset não encontrado. Instale o pacote 'ipset'."
-    need_cmd sort; need_cmd awk; need_cmd sed; need_cmd grep; need_cmd getent
-    need_cmd timeout; need_cmd flock; need_cmd cmp
+require_common_tools() {
+    need_cmd sort
+    need_cmd awk
+    need_cmd sed
+    need_cmd grep
+    need_cmd getent
+    need_cmd timeout
+    need_cmd flock
+    need_cmd cmp
 }
 
 acquire_lock() {
