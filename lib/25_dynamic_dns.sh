@@ -194,20 +194,18 @@ dynamic_commit_candidate() {
 }
 
 dynamic_current_set_entries() {
-    local outfile="$1"; : > "$outfile"
-    if "$IPSET" list "$SET_DYN_DST" >/dev/null 2>&1; then
-        "$IPSET" save "$SET_DYN_DST" | awk -v n="$SET_DYN_DST" '$1=="add" && $2==n {print $3}' | LC_ALL=C sort -u > "$outfile"
-    fi
+    local outfile="${1:?outfile ausente}"
+    backend_set_export_entries "$SET_DYN_DST" "$outfile"
 }
 
 dynamic_load_if_changed() {
     local entries="$1" current
     current=$(mktemp "${DYNAMIC_STATE_DIR}/current.XXXXXX")
-    ensure_active_set "$SET_DYN_DST"
+    backend_set_ensure "$SET_DYN_DST"
     dynamic_current_set_entries "$current"
     if cmp -s "$current" "$entries"; then DYNAMIC_SET_CHANGED=0
     else
-        load_ipset_atomic "$SET_DYN_DST" "$entries" || { rm -f "$current"; return 1; }
+        backend_set_load_atomic "$SET_DYN_DST" "$entries" || { rm -f "$current"; return 1; }
         DYNAMIC_SET_CHANGED=1
     fi
     rm -f "$current"
@@ -228,7 +226,7 @@ dynamic_refresh_once() {
 }
 
 dynamic_require_daemon_tools() {
-    require_root; require_firewall_tools
+    require_root; backend_require_tools
     command -v dig >/dev/null 2>&1 || die "O serviço DNS dinâmico requer 'dig'. Instale o pacote bind-utils (dnf/yum install bind-utils)."
 }
 
