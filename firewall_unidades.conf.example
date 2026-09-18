@@ -1,6 +1,10 @@
 # /operacao/firewall.unidades/firewall_unidades_v2.conf
 SERVER_IP="192.168.11.1"
 
+# v2.4 - backend explícito. Não há seleção automática.
+# nftables será implementado a partir da v2.5.
+BACKEND="iptables"
+
 DNS_TIMEOUT=4
 DNS_JOBS=8
 DNS_CACHE_MAX_AGE=604800
