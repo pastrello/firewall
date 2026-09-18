@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.1 - 2026-09-18
+
+### Correção
+
+- corrige falha `outfile: variável não associada` em `dynamic_query_host()` quando executado com `set -u`;
+- endurece `prepare_dynamic_snapshot()` contra o mesmo padrão de associação em declaração `local`;
+- adiciona teste de regressão que executa a implementação real do resolver dinâmico sob `set -u`.
+
 ## 2.3.0 - 2026-09-17
 
 ### Dynamic DNS outbound
