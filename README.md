@@ -91,7 +91,39 @@ VPN_INTERFACES="wg0"
 
 Em `roles`, somente LAN/VPN recebem confiança genérica em INPUT; WAN nunca recebe. Veja `docs/V2.2-MIGRATION.md`.
 
-## Instalação
+## Instalação e upgrade
+
+Para uma instalação nova a partir de um clone/cópia atual do repositório:
+
+~~~bash
+bash install.sh install /operacao/firewall.unidades
+~~~
+
+O instalador cria uma configuração mínima segura apenas se ela não existir, com `LOG_TRAFFIC=0`, e cria `regras_firewall.conf` vazio. Ele **não aplica o firewall automaticamente**.
+
+Para atualizar uma instalação antiga usando uma cópia nova do repositório:
+
+~~~bash
+bash install.sh upgrade /operacao/firewall.unidades
+~~~
+
+Ou, depois que a versão 2.4.3+ já estiver instalada:
+
+~~~bash
+./firewall_unidades.sh upgrade
+~~~
+
+Quando o diretório instalado é também um checkout Git, `upgrade` executa `git pull --ff-only`. Se houver alterações locais em arquivos versionados, o upgrade é recusado. Configuração, regras e `.firewall-v2` são preservados.
+
+Antes de substituir a aplicação, é criado backup em:
+
+~~~text
+/operacao/firewall.unidades/.app-backups/YYYYMMDD_HHMMSS/
+~~~
+
+A retenção padrão é `APP_BACKUP_KEEP=5`. Após a troca, o instalador executa validação de sintaxe e `check`; se a validação falhar, restaura a versão anterior da aplicação. Se o `firewall-dnswatch.service` estiver ativo, ele é reiniciado após upgrade bem-sucedido.
+
+## Instalação manual
 
 ```bash
 mkdir -p /operacao/firewall.unidades
