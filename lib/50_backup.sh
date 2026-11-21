@@ -30,8 +30,11 @@ prune_backups() {
     local count=0 d
     while IFS= read -r d; do
         ((count+=1))
-        (( count > BACKUP_KEEP )) && rm -rf -- "$d"
+        if (( count > BACKUP_KEEP )); then
+            rm -rf -- "$d"
+        fi
     done < <(find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%p\n' | LC_ALL=C sort -r)
+    return 0
 }
 
 restore_set_from_backup() {
