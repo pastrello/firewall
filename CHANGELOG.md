@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.1 - 2026-11-21
+
+### Operação
+
+- adiciona `-V`, `--version` e `version` para exibir a versão instalada;
+- mantém compatibilidade de configuração com instalações 2.0.x durante atualização para 2.4.x.
+
 ## 2.4.0 - 2026-09-18
 
 ### Abstração de backend
