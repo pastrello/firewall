@@ -15,17 +15,17 @@ case "$MODE" in
 Firewall Unidades - bootstrap de instalação/upgrade
 
 Uso:
-  ./install.sh install [DIRETORIO]
-  ./install.sh upgrade [DIRETORIO]
-  ./install.sh [DIRETORIO]
+  bash install.sh install [DIRETORIO]
+  bash install.sh upgrade [DIRETORIO]
+  bash install.sh [DIRETORIO]
 
 Padrão:
   DIRETORIO=/operacao/firewall.unidades
 
 Exemplos:
-  ./install.sh
-  ./install.sh upgrade
-  ./install.sh upgrade /operacao/firewall.unidades
+  bash install.sh
+  bash install.sh upgrade
+  bash install.sh upgrade /operacao/firewall.unidades
 EOF_HELP
         exit 0
         ;;
