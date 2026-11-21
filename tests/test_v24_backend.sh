@@ -21,6 +21,7 @@ LOCK_FD=9
 LOCK_HELD=0
 ROLLBACK_ARMED=0
 ACTIVE_BACKUP=""
+BACKUP_KEEP=10
 
 SET_DST="FWU_DST_V4"
 SET_SRC="FWU_SRC_V4"
@@ -88,6 +89,13 @@ mkdir -p "$LEGACY_BACKUP"
 printf '*filter\nCOMMIT\n' > "$LEGACY_BACKUP/iptables.save"
 [[ "$(backup_backend_name "$LEGACY_BACKUP")" == "iptables" ]] &&
     pass "backup antigo reconhecido como iptables" || fail "backup antigo reconhecido como iptables"
+
+mkdir -p "$BACKUP_DIR/20261121_000000"
+if prune_backups; then
+    pass "prune_backups retorna sucesso sem excedentes"
+else
+    fail "prune_backups retorna sucesso sem excedentes"
+fi
 
 if ( BACKEND="nftables"; backend_load "$ROOT_DIR" "$BACKEND" ) >/dev/null 2>&1; then
     fail "nftables ainda não pode ser selecionado na v2.4"
