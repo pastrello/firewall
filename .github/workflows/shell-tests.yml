@@ -26,3 +26,6 @@ jobs:
 
       - name: v2.4 backend tests
         run: bash tests/test_v24_backend.sh
+
+      - name: v2.4.3 install and upgrade tests
+        run: bash tests/test_v243_install.sh
