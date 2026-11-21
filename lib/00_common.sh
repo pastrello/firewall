@@ -17,6 +17,7 @@ usage() {
 firewall_unidades.sh v${VERSION}
 
 Uso:
+  $0 -V | --version
   $0 check [--resolve]
   $0 stats
   $0 generate [IP_DO_SERVIDOR]
@@ -33,6 +34,7 @@ Uso:
   $0 backups
 
 Comandos:
+  -V, --version    Mostra a versão instalada e encerra.
   check            Valida regras e política. Com --resolve, testa DNS d:/s:/u:.
   stats            Mostra quantidade de regras e duplicatas sem alterar firewall.
   generate         Gera runtime, incluindo snapshot atual de u:, sem alterar kernel.
