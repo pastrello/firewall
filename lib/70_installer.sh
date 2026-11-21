@@ -8,6 +8,7 @@ APP_BACKUP_DIR_NAME="${APP_BACKUP_DIR_NAME:-.app-backups}"
 install_managed_paths() {
     cat <<'EOF_PATHS'
 firewall_unidades.sh
+install.sh
 lib
 docs
 examples
