@@ -76,8 +76,11 @@ install_prune_app_backups() {
     [[ -d "$root" ]] || return 0
     while IFS= read -r d; do
         ((count+=1))
-        (( count > APP_BACKUP_KEEP )) && rm -rf -- "$d"
+        if (( count > APP_BACKUP_KEEP )); then
+            rm -rf -- "$d"
+        fi
     done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -printf '%p\n' | LC_ALL=C sort -r)
+    return 0
 }
 
 install_restore_app_backup() {
