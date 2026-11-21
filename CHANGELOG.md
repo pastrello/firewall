@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.2 - 2026-11-21
+
+### Operação
+
+- altera o padrão de `LOG_TRAFFIC` para `0` (desativado);
+- logging de tráfego passa a ser opt-in com `LOG_TRAFFIC=1` no arquivo de configuração.
+
 ## 2.4.1 - 2026-11-21
 
 ### Operação
