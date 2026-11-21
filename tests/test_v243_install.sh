@@ -32,6 +32,9 @@ install_deploy_from_source "$ROOT_DIR" "$TARGET" "install"
 [[ -x "$TARGET/firewall_unidades.sh" ]] &&
     pass "instala script principal" || fail "instala script principal"
 
+[[ -x "$TARGET/install.sh" ]] &&
+    pass "instala bootstrap install.sh" || fail "instala bootstrap install.sh"
+
 [[ -r "$TARGET/firewall_unidades_v2.conf" ]] &&
     grep -Fxq 'LOG_TRAFFIC=0' "$TARGET/firewall_unidades_v2.conf" &&
     pass "cria configuração segura com log desativado" || fail "cria configuração segura com log desativado"
