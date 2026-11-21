@@ -6,6 +6,7 @@ regras_inbound.conf
 
 # Estado gerado
 .firewall-v2/
+.app-backups/
 *.log
 *.save
 *.bak
