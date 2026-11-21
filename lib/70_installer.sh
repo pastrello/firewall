@@ -163,6 +163,7 @@ EOF_RULES
 
     chmod 700 "$target"
     chmod 700 "$target/firewall_unidades.sh"
+    [[ -e "$target/install.sh" ]] && chmod 700 "$target/install.sh"
     find "$target/lib" -type d -exec chmod 700 {} + 2>/dev/null || true
     find "$target/lib" -type f -name '*.sh' -exec chmod 700 {} + 2>/dev/null || true
     chmod 600 "$target/firewall_unidades_v2.conf" "$target/regras_firewall.conf"
