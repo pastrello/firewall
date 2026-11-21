@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.4.3 - 2026-11-21
+
+### Instalação e upgrade
+
+- adiciona `install` e `upgrade` ao `firewall_unidades.sh`;
+- adiciona `install.sh` como bootstrap para instalações antigas;
+- preserva `firewall_unidades_v2.conf`, `regras_firewall.conf` e `.firewall-v2`;
+- cria backup dos arquivos da aplicação em `.app-backups/` antes de upgrade;
+- valida sintaxe e executa `check` após a troca, com restauração da aplicação anterior em caso de falha;
+- em checkout Git, `upgrade` usa `git pull --ff-only` e recusa alterações locais em arquivos versionados;
+- reinicia `firewall-dnswatch.service` após upgrade bem-sucedido quando ele já estava ativo;
+- adiciona teste automatizado de instalação/upgrade.
+
+### Correções
+
+- corrige retorno não-zero de `prune_backups` quando não havia backups excedentes para remover;
+- aplica a mesma correção à retenção de `.app-backups`;
+- `-V`/`--version` passa a responder antes de carregar configuração/backend.
+
 ## 2.4.2 - 2026-11-21
 
 ### Operação
