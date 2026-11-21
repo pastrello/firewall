@@ -12,6 +12,7 @@ DNS_STRICT=0
 OPTIMIZE_NETWORKS=1
 ALLOW_FIREWALLD=0
 BACKUP_KEEP=10
+APP_BACKUP_KEEP=5
 
 # v2.2 - papéis de interfaces
 INTERFACE_POLICY_MODE="compat"       # compat | roles
