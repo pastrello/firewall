@@ -24,7 +24,7 @@
 set -Eeuo pipefail
 umask 077
 
-VERSION="2.4.0"
+VERSION="2.4.1"
 
 BASE_DIR="${FW_BASE_DIR:-/operacao/firewall.unidades}"
 RULES_FILE="${FW_RULES_FILE:-${BASE_DIR}/regras_firewall.conf}"
@@ -147,6 +147,7 @@ main() {
         uninstallservice) shift; cmd_uninstallservice "$@" ;;
         backups) shift; cmd_backups "$@" ;;
         rollback) shift; cmd_rollback "$@" ;;
+        -V|--version|version) printf 'firewall_unidades.sh v%s\n' "$VERSION" ;;
         -h|--help|help|"") usage ;;
         *) usage >&2; die "Comando desconhecido: $cmd" ;;
     esac
