@@ -30,6 +30,8 @@ Uso:
   $0 dynamic-status
   $0 installservice
   $0 uninstallservice
+  $0 install [DIRETORIO]
+  $0 upgrade [DIRETORIO]
   $0 rollback [DIRETORIO_BACKUP]
   $0 backups
 
@@ -46,7 +48,9 @@ Comandos:
   dynamic-refresh  Força uma atualização imediata do ipset de destinos u:.
   dynamic-status   Mostra estado do DNS watcher e destinos dinâmicos.
   installservice   Instala/habilita/inicia firewall-dnswatch.service no systemd.
-  uninstallservice Para/desabilita/remove o serviço, sem apagar o ipset atual.
+  uninstallservice Para/desabilita/remove o serviço, sem apagar o conjunto atual.
+  install          Instala a aplicação no diretório alvo (padrão: BASE_DIR), preservando config/regras/estado.
+  upgrade          Atualiza a aplicação com backup e rollback de arquivos; em checkout Git usa pull --ff-only.
   rollback         Restaura um backup; sem argumento usa o mais recente.
   backups          Lista backups disponíveis.
 
