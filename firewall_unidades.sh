@@ -24,7 +24,14 @@
 set -Eeuo pipefail
 umask 077
 
-VERSION="2.4.2"
+VERSION="2.4.3"
+
+case "${1:-}" in
+    -V|--version|version)
+        printf 'firewall_unidades.sh v%s\n' "$VERSION"
+        exit 0
+        ;;
+esac
 
 BASE_DIR="${FW_BASE_DIR:-/operacao/firewall.unidades}"
 RULES_FILE="${FW_RULES_FILE:-${BASE_DIR}/regras_firewall.conf}"
@@ -125,7 +132,8 @@ for module in \
     "$SCRIPT_DIR/lib/25_dynamic_dns.sh" \
     "$SCRIPT_DIR/lib/40_rules.sh" \
     "$SCRIPT_DIR/lib/50_backup.sh" \
-    "$SCRIPT_DIR/lib/60_commands.sh"; do
+    "$SCRIPT_DIR/lib/60_commands.sh" \
+    "$SCRIPT_DIR/lib/70_installer.sh"; do
     source "$module"
 done
 
@@ -145,9 +153,10 @@ main() {
         dnswatch-daemon) shift; cmd_dnswatch_daemon "$@" ;;
         installservice) shift; cmd_installservice "$@" ;;
         uninstallservice) shift; cmd_uninstallservice "$@" ;;
+        install) shift; cmd_install "$@" ;;
+        upgrade) shift; cmd_upgrade "$@" ;;
         backups) shift; cmd_backups "$@" ;;
         rollback) shift; cmd_rollback "$@" ;;
-        -V|--version|version) printf 'firewall_unidades.sh v%s\n' "$VERSION" ;;
         -h|--help|help|"") usage ;;
         *) usage >&2; die "Comando desconhecido: $cmd" ;;
     esac
